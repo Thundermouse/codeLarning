@@ -1,6 +1,6 @@
 #include<stdlib.h>
 template<typename T>
-void matrixMultiple2DCPU(T *inputA, T *inputB, T *output, size_t matAyNum, size_t kNum, size_t matBxNum)
+void matrixMultiply2DCPU(T *inputA, T *inputB, T *output, size_t matAyNum, size_t kNum, size_t matBxNum)
 {
     for (int j = 0; j < matAyNum; ++j)
     {
