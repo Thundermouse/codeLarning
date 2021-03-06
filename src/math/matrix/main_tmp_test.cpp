@@ -66,7 +66,7 @@ int main()
     CUDA_CHECK_ERROR(cudaMemcpy(d_inputB, inputB, sizeof(float) * BCol * kNum, cudaMemcpyHostToDevice));
 
     matrixMultiply2DCPU(inputA, inputB, outputCPU, ARow, kNum, BCol);
-    matrixMultiply2DGPU(inputA, inputB, outputCPU, ARow, kNum, kNum, BCol, MatrixAlgorithm::BASE);
+    matrixMultiply2DGPU(d_inputA, d_inputB, d_output, ARow, kNum, kNum, BCol, MatrixAlgorithm::SHARED_MEM_BASE);
 
     CUDA_CHECK_ERROR(cudaMemcpy(outputGPU, d_output, sizeof(float) * ARow * BCol, cudaMemcpyDeviceToHost));
 

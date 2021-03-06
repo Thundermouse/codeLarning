@@ -18,40 +18,36 @@ __global__ static void matrixMultiply2DSharedMem(T* inputA, T* inputB, T* output
     __shared__ T MA[TILE_WIDTH][TILE_WIDTH];
     __shared__ T MB[TILE_WIDTH][TILE_WIDTH];
 
-    const size_t CAL_WIDTH = blockDim.x;
-
     size_t matOutX =  blockIdx.x * blockDim.x + threadIdx.x;
     size_t matOutY =  blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (matOutX >= matBxNum && matOutY >= matAyNum)
-    {
-        return;
-    }
-
     T retValue = 0;
-    for (size_t tileId = 0; tileId < (kNum + CAL_WIDTH - 1) /CAL_WIDTH; ++tileId)
+    for (size_t tileId = 0; tileId < (kNum + TILE_WIDTH - 1) /TILE_WIDTH; ++tileId)
     {
         MA[threadIdx.y][threadIdx.x] = 0;
         MB[threadIdx.y][threadIdx.x] = 0;
-        if (tileId * CAL_WIDTH + threadIdx.x < kNum)
+        if (tileId * TILE_WIDTH + threadIdx.x < kNum && matOutY < matAyNum)
         {
-            MA[threadIdx.y][threadIdx.x] = inputA[matOutY*kNum + tileId*CAL_WIDTH + threadIdx.x];
+            MA[threadIdx.y][threadIdx.x] = inputA[matOutY*kNum + tileId*TILE_WIDTH + threadIdx.x];
         }
-        if( tileId * CAL_WIDTH + threadIdx.y < kNum)
+        if( tileId * TILE_WIDTH + threadIdx.y < kNum && matOutX < matBxNum)
         {
-            MB[threadIdx.y][threadIdx.x] = inputB[(tileId*CAL_WIDTH+threadIdx.y)*matBxNum + matOutX];
+            MB[threadIdx.y][threadIdx.x] = inputB[(tileId*TILE_WIDTH+threadIdx.y)*matBxNum + matOutX];
         }
 
         __syncthreads();
         
-        for (size_t kid = 0; kid < CAL_WIDTH;++kid)
+        for (size_t kid = 0; kid < TILE_WIDTH;++kid)
         {
             retValue += MA[threadIdx.y][kid] * MB[kid][threadIdx.x];
         }
         __syncthreads();
     }
 
-    output[matOutY * matBxNum + matBxNum] = retValue;
+    if (matOutX < matBxNum && matOutY < matAyNum)
+    {
+        output[matOutY * matBxNum + matOutX] = retValue;
+    }
 }
 
 // MatrixA size = kNum*matAyNum
