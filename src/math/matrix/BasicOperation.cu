@@ -1,24 +1,22 @@
 #include <cuda_runtime_api.h>
-#include <cuda_fp16.h>
 #include <device_launch_parameters.h>
 #include <math.h>
-static size_t TILE_WIDTH=32;
+#include <assert.h>
+const static size_t TILE_WIDTH = 32;
 
 // MatrixA size = kNum*matAyNum
 // MatrixB size = matBxNum*kNum
 // Output size = matBxNum*matAyNum
 // call example matrixMultiple2D<<<{(matBxNum + threadIdx.x - 1)/threadIdx.x,(matAyNum + threadIdx.y -1)/threadIdx.y},{,}>>>
 template<typename T>
-__global__ static void matrixMultiple2D(T* inputA, T*inputB, T* output, size_t matAyNum, size_t kNum, size_t matBxNum)
+__global__ static void matrixMultiple2D(T* inputA, T* inputB, T* output, const size_t matAyNum, const size_t kNum, const size_t matBxNum)
 {
-    __shared__ T MA[TILE_WIDTH*TILE_WIDTH];
-    __shared__ T MB[TILE_WIDTH*TILE_WIDTH];
+    __shared__ T MA[TILE_WIDTH][TILE_WIDTH];
+    __shared__ T MB[TILE_WIDTH][TILE_WIDTH];
 
-    assert(blockDim.x==bloxkDim.y);
 
-    size_t CAL_WIDTH = blockDim.x;
-    assert(TILE_WIDTH>=CAL_WIDTH);
-
+    const size_t CAL_WIDTH = blockDim.x;
+    
     size_t matOutX =  blockIdx.x * blockDim.x + threadIdx.x;
     size_t matOutY =  blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -53,8 +51,16 @@ __global__ static void matrixMultiple2D(T* inputA, T*inputB, T* output, size_t m
     output[matOutY * matBxNum + matBxNum] = retValue;
 }
 
-template<>
-__global__ static void matrixMultiple2D<float>(half2* inputA, half2* inputB, half2* output, size_t matAyNum, size_t kNum, size_t matBxNum)
-{
 
+template<typename T>
+float matrixMultiple2DGPU(T* d_inputA, T* d_inputB, T* d_output, const size_t ARow, const size_t ACol, const size_t BRow, const size_t BCol)
+{
+    assert(ACol == BRow);
+    const size_t kNum = ACol;
+    dim3 grid((BCol + TILE_WIDTH - 1) / TILE_WIDTH,(BCol + TILE_WIDTH - 1) / TILE_WIDTH,1);
+    dim3 block(TILE_WIDTH, TILE_WIDTH,1);
+    matrixMultiple2D<<<grid, block>>>(d_inputA, d_inputB, d_output,kNum, ARow, BCol);
+    return 0;
 }
+
+template float matrixMultiple2DGPU<float>(float* d_inputA, float* d_inputB, float* d_output, const size_t ARow,const size_t ACol, const size_t BRow, const size_t BCol);
