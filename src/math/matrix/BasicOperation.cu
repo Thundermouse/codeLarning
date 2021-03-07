@@ -7,7 +7,6 @@
 
 const static size_t TILE_WIDTH = 32;
 
-
 // MatrixA size = kNum*matAyNum
 // MatrixB size = matBxNum*kNum
 // Output size = matBxNum*matAyNum
@@ -26,17 +25,19 @@ __global__ static void matrixMultiply2DSharedMem(T* inputA, T* inputB, T* output
     {
         MA[threadIdx.y][threadIdx.x] = 0;
         MB[threadIdx.y][threadIdx.x] = 0;
+
         if (tileId * TILE_WIDTH + threadIdx.x < kNum && matOutY < matAyNum)
         {
             MA[threadIdx.y][threadIdx.x] = inputA[matOutY*kNum + tileId*TILE_WIDTH + threadIdx.x];
         }
+
         if( tileId * TILE_WIDTH + threadIdx.y < kNum && matOutX < matBxNum)
         {
             MB[threadIdx.y][threadIdx.x] = inputB[(tileId*TILE_WIDTH+threadIdx.y)*matBxNum + matOutX];
         }
 
         __syncthreads();
-        
+
         for (size_t kid = 0; kid < TILE_WIDTH;++kid)
         {
             retValue += MA[threadIdx.y][kid] * MB[kid][threadIdx.x];

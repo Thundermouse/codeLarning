@@ -12,11 +12,12 @@ template <typename T>
 bool compareArray(T *inputA, T *inputB, size_t eleNum)
 {
     assert(std::is_trivial<T>::value && std::is_standard_layout<T>::value && "This function only be called with POD value.");
+    std::cout.precision(10);
     for (size_t i = 0; i < eleNum; ++i)
     {
-        if (inputA[i] != inputB[i])
+        if (std::fabs(inputA[i] - inputB[i]) > CUDA_FLT_ACC_EPSILON)
         {
-            std::cout << "Array Element unequal at idx:" << static_cast<int>(i) << ", A = " << inputA[i] << ", B = " << inputB[i] << std::endl;
+            std::cout << "Array Element unequal at idx:" << static_cast<int>(i) << ", A = " << inputA[i] << ", B = " << inputB[i] << ", delta = "<< inputA[i] - inputB[i]  <<std::endl;
             return false;
         }
     }
@@ -26,9 +27,9 @@ bool compareArray(T *inputA, T *inputB, size_t eleNum)
 
 int main()
 {
-    const size_t ARow = 1280;
-    const size_t BCol = 1280;
-    const size_t kNum = 1920;
+    const size_t ARow = 1920;
+    const size_t BCol = 1920;
+    const size_t kNum = 1280;
     float *inputA = new float[ARow * kNum];
     float *inputB = new float[kNum * BCol];
     float *outputCPU = new float[ARow * BCol];
@@ -37,6 +38,9 @@ int main()
     float *d_inputA = nullptr;
     float *d_inputB = nullptr;
     float *d_output = nullptr;
+
+    cudaEvent_t start;
+    cudaEvent_t stop;
 
     CUDA_CHECK_ERROR(cudaMalloc((void **)&d_inputA, sizeof(float) * ARow * kNum));
     CUDA_CHECK_ERROR(cudaMalloc((void **)&d_inputB, sizeof(float) * BCol * kNum));
@@ -61,15 +65,23 @@ int main()
             inputB[j * BCol + i] = dis(gen);
         }
     }
-
+    CUDA_CHECK_ERROR(cudaEventCreate(&start));
+    CUDA_CHECK_ERROR(cudaEventCreate(&stop));
     CUDA_CHECK_ERROR(cudaMemcpy(d_inputA, inputA, sizeof(float) * ARow * kNum, cudaMemcpyHostToDevice));
     CUDA_CHECK_ERROR(cudaMemcpy(d_inputB, inputB, sizeof(float) * BCol * kNum, cudaMemcpyHostToDevice));
 
-    matrixMultiply2DCPU(inputA, inputB, outputCPU, ARow, kNum, BCol);
+    //matrixMultiply2DCPU(inputA, inputB, outputCPU, ARow, kNum, BCol);
+
+    CUDA_CHECK_ERROR(cudaEventRecord(start));
     matrixMultiply2DGPU(d_inputA, d_inputB, d_output, ARow, kNum, kNum, BCol, MatrixAlgorithm::SHARED_MEM_BASE);
+    CUDA_CHECK_ERROR(cudaEventRecord(stop));
 
     CUDA_CHECK_ERROR(cudaMemcpy(outputGPU, d_output, sizeof(float) * ARow * BCol, cudaMemcpyDeviceToHost));
 
+    float ElpaseTimeMs = 0;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&ElpaseTimeMs, start, stop);
+    std::cout<<"Kernel Elapsed Time : "<< ElpaseTimeMs << "ms"<<std::endl;
     compareArray(outputCPU, outputGPU, ARow * BCol);
 
     CUDA_CHECK_ERROR(cudaFree(d_inputA));

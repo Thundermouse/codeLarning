@@ -1,30 +1,39 @@
+#ifndef __CORE_CHECK__
+#define __CORE_CHECK__
+
 #include <string>
-#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 
-#define CUDA_SAFTY_ERROR_CHECK false
-// macro to easily check for cuda errors
+#define CUDA_CHECK_ERROR(func)                                                                 \
+    {                                                                                          \
+        cudaError_t err = cudaGetLastError();                                                  \
+        if (cudaSuccess != err)                                                                \
+        {                                                                                      \
+            std::cout << "[CUDA ERROR] Last Run In"                                            \
+                      << " File: " << __FILE__ << ":" << __LINE__ << ":" << #func << std::endl \
+                      << " ErrorStr : " << cudaGetErrorString(err) << std::endl;               \
+            exit(-1);                                                                          \
+        };                                                                                     \
+        err = func;                                                                            \
+        if (cudaSuccess != err)                                                                \
+        {                                                                                      \
+            std::cout << "[CUDA ERROR] Current Func"                                           \
+                      << " File: " << __FILE__ << ":" << __LINE__ << ":" << #func << std::endl \
+                      << " ErrorStr: " << cudaGetErrorString(err) << std::endl;                \
+            exit(-1);                                                                          \
+        };                                                                                     \
+    }
 
-#define cudaCheckError(func)                                                              \
-    {                                                                                     \
-        cudaError_t err = cudaGetLastError();                                             \
-        if (cudaSuccess != err)                                                           \
-        {                                                                                 \
-            std::runtime_error(std::string("[CUDA ERROR] In") + cudaGetErrorString(err) + \
-                               std::string("In Func: " #func) +                           \
-                               std::string("\n File: " __FILE__ ":") +                    \
-                               std::to_string(__LINE__));                                 \
-        }                                                                                 \
-    };
+// TODO use print
+//#define CUDA_CHECK_ERROR_VOID()\
+//    {                                                                                           \
+//        cudaError_t err = cudaGetLastError();                                                   \
+//        if (cudaSuccess != err)                                                                 \
+//        {                                                                                       \
+//            std::cout << "[CUDA ERROR] Last Run In"                                             \
+//                      << " File: " << __FILE__ << ":" << __LINE__ << std::endl; \
+//            exit(-1);                                                                           \
+//        };                                                                                      \                                                                                   \
+//    }
 
-#define cudaSafetyCheckError(func)                                                                   \
-    {                                                                                                \
-        cudaCheckError(#func);                                                                       \
-        err = cudaDeviceSynchronize();                                                               \
-        if (cudaSuccess != err)                                                                      \
-        {                                                                                            \
-            std::runtime_error(std::string("[CUDA ERROR] Sync Error In") + cudaGetErrorString(err) + \
-                               std::string("In Func: " #func) +                                      \
-                               std::string("\n File: " __FILE__ ":") +                               \
-                               std::to_string(__LINE__));                                            \
-        }                                                                                            \
-    };
+#endif

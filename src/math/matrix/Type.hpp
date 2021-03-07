@@ -1,6 +1,15 @@
 
 #ifndef __MATH__MATRIX_TYPE_HPP__
 #define __MATH__MATRIX_TYPE_HPP__
+
+#include <limits>
+
+#define CUDA_DOE_ACC_EPSILON 0.0001
+#define CUDA_FLT_ACC_EPSILON 0.1
+
+// std::numeric_limits<float>::epsilon()
+#define CUDA_FLT_EPSILON __FLT_EPSILON__
+
 #define CUDA_CHECK_ERROR(func)                                                                 \
     {                                                                                          \
         cudaError_t err = cudaGetLastError();                                                  \
