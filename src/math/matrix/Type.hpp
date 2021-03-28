@@ -45,7 +45,8 @@
 typedef enum MatrixAlgorithm
 {
     BASE = 0,
-    SHARED_MEM_BASE = 1,
-    ALGO_NUM = 2
+    SHARED_MEM_BASE,
+    MULTI_ELEM_PER_THREAD,
+    ALGO_NUM
 } MatrixAlgorithm;
 #endif

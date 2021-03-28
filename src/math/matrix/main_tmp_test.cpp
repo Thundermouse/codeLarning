@@ -15,7 +15,7 @@ bool compareArray(T *inputA, T *inputB, size_t eleNum)
     std::cout.precision(10);
     for (size_t i = 0; i < eleNum; ++i)
     {
-        if (std::fabs(inputA[i] - inputB[i]) > CUDA_FLT_ACC_EPSILON)
+        if (std::fabs(inputA[i] - inputB[i]) > 0.00001)
         {
             std::cout << "Array Element unequal at idx:" << static_cast<int>(i) << ", A = " << inputA[i] << ", B = " << inputB[i] << ", delta = "<< inputA[i] - inputB[i]  <<std::endl;
             return false;
@@ -70,7 +70,7 @@ int main()
     CUDA_CHECK_ERROR(cudaMemcpy(d_inputA, inputA, sizeof(float) * ARow * kNum, cudaMemcpyHostToDevice));
     CUDA_CHECK_ERROR(cudaMemcpy(d_inputB, inputB, sizeof(float) * BCol * kNum, cudaMemcpyHostToDevice));
 
-    //matrixMultiply2DCPU(inputA, inputB, outputCPU, ARow, kNum, BCol);
+    matrixMultiply2DCPU(inputA, inputB, outputCPU, ARow, kNum, BCol);
 
     CUDA_CHECK_ERROR(cudaEventRecord(start));
     matrixMultiply2DGPU(d_inputA, d_inputB, d_output, ARow, kNum, kNum, BCol, MatrixAlgorithm::SHARED_MEM_BASE);
